@@ -1,3 +1,8 @@
+# authentication with appwrite
+this method below is what i make my studying appwrite docs and then used it as i want to 
+like in class and also try catch handling 
+
+
 import config from "../config/config";
 import {Client,Account,ID} from "appwrite";
 
