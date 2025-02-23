@@ -11,6 +11,7 @@ export class AuthService {
         this.client
             .setEndpoint(config.appwriteUrl)
             .setProject(config.appwriteProjectId);
+           console.log("hello")
     }
 }
 
