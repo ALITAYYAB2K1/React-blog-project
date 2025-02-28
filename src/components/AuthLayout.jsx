@@ -19,10 +19,5 @@ export default functiion Protected({children,authentication = true}){
     },[authStatus,navigate,authentication])
 
 
-    return (
-        <div>
-            {children}
-        </div>
-    )
-
+    return loader? <div>Loading...</div> : <>{children}</>
 }
