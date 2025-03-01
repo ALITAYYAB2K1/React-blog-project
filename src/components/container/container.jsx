@@ -1,4 +1,4 @@
-import React, { Children } from 'react'
+import React from 'react'
 
 function container({children}) {
   return (
@@ -8,4 +8,4 @@ function container({children}) {
   )
 }
 
-export default container
+export default Container
