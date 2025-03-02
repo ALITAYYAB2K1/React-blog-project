@@ -54,14 +54,17 @@ function PostForm({ post }) {
       return value
         .trim()
         .toLowerCase()
-        .replace(/^[a-zA-Z\d\s]+/g, "-")
-        .replace(/[\s]+/g, "-");
+        .replace(/\s+/g, "-") // Corrected regex for spaces
+        .replace(/[^a-z0-9-]/g, ""); // Remove non-alphanumeric characters except '-'
     }
-  });
+    return "";
+  }, []);
+
   React.useEffect(() => {
     const subscription = watch((value) => {
-      if (name === "title") {
-        setValue("slug", slugTransform(value.title, { shouldValidate: true }));
+      if (value.title) {
+        // ✅ Fix: Check value.title instead of 'name'
+        setValue("slug", slugTransform(value.title), { shouldValidate: true });
       }
     });
     return () => subscription.unsubscribe();

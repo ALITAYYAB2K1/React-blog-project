@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import authService from "../appwrite/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../store/authSlice";
@@ -11,7 +11,7 @@ function Signup() {
   const dispatch = useDispatch();
   const [error, setError] = useState("");
   const { register, handleSubmit } = useForm();
-  const signup = async (data) => {
+  const create = async (data) => {
     setError("");
     try {
       const userData = await authService.createAccount(data);

@@ -1,11 +1,7 @@
-import React from 'react'
+import React from "react";
 
-function container({children}) {
-  return (
-    <div className='w-full max-w-7 mx-auto px-4'>
-        {children}
-    </div>
-  )
+function Container({ children }) {
+  return <div className="w-full max-w-7 mx-auto px-4">{children}</div>;
 }
 
-export default Container
+export default Container;
