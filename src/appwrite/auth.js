@@ -4,51 +4,62 @@ import { Client, Account, ID } from "appwrite";
 export class AuthService {
   client = new Client();
   account;
+
   constructor() {
     this.client
       .setEndpoint(conf.appwriteUrl)
       .setProject(conf.appwriteProjectId);
     this.account = new Account(this.client);
   }
+
   async createAccount({ email, password, name }) {
     try {
-      const userAcount = await this.account.create(
+      const userAccount = await this.account.create(
         ID.unique(),
         email,
         password,
         name
       );
-      if (userAcount) {
-        //call another method to create user profile
+      if (userAccount) {
+        // call another method
         return this.login({ email, password });
       } else {
-        return userAcount;
+        return userAccount;
       }
-    } catch (e) {
-      throw e;
+    } catch (error) {
+      throw error;
     }
   }
+
   async login({ email, password }) {
     try {
-      //https://appwrite.io/docs/products/auth/email-password // see the methods from documetation
       return await this.account.createEmailPasswordSession(email, password);
-    } catch (e) {
-      throw e;
+    } catch (error) {
+      throw error;
     }
   }
+
   async getCurrentUser() {
     try {
-      return await this.account.get();
-    } catch (e) {
-      throw e;
+      const user = await this.account.get();
+      return user;
+    } catch (error) {
+      console.error("Auth Service :: getCurrentUser :: Error", error);
+
+      // If session is expired or missing, return null
+      if (error.code === 401) {
+        return null; // Avoid unnecessary API calls
+      }
+
+      throw error;
     }
-    return null;
   }
+
   async logout() {
     try {
-      return await this.account.deleteSessions();
-    } catch (e) {
-      throw e;
+      await this.account.deleteSessions();
+    } catch (error) {
+      console.log("Appwrite serive :: logout :: error", error);
     }
   }
 }
