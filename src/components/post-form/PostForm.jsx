@@ -1,12 +1,17 @@
-import React, { useCallback, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Button, Input, RTE, Select } from "..";
 import appwriteService from "../../appwrite/config";
+import authService from "../../appwrite/auth"; // Import auth service directly
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { ID } from "appwrite"; // Ensure ID is imported from Appwrite SDK
+import { ID } from "appwrite";
 
 export default function PostForm({ post }) {
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -26,6 +31,27 @@ export default function PostForm({ post }) {
 
   const navigate = useNavigate();
   const userData = useSelector((state) => state.auth.userData);
+
+  // Check authentication status when component loads
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const user = await authService.getCurrentUser();
+        if (user) {
+          setIsAuthenticated(true);
+        } else {
+          setIsAuthenticated(false);
+          setError("You must be logged in to create posts");
+        }
+      } catch (error) {
+        console.error("Auth check failed:", error);
+        setIsAuthenticated(false);
+        setError("Authentication error: " + error.message);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const slugTransform = useCallback((value) => {
     if (value && typeof value === "string")
@@ -50,48 +76,91 @@ export default function PostForm({ post }) {
   }, [watch, slugTransform, setValue]);
 
   const submit = async (data) => {
+    setError("");
+    setLoading(true);
+
     try {
+      // Double-check authentication before submitting
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        setError("You must be logged in to create posts");
+        setLoading(false);
+        return;
+      }
+
       let fileId = post?.featuredImage || null;
 
-      // Handle file upload
-      if (data.image?.[0]) {
-        const file = await appwriteService.uploadFile(data.image[0]);
-        if (file) {
-          fileId = file.$id;
+      // Only upload a file if a new image was selected
+      if (data.image && data.image[0]) {
+        try {
+          const file = await appwriteService.uploadFile(data.image[0]);
+          if (file && file.$id) {
+            fileId = file.$id;
+            console.log("File uploaded successfully with ID:", fileId);
+          }
+        } catch (fileError) {
+          console.error("File upload error:", fileError);
+          setError("Error uploading image. " + fileError.message);
+          setLoading(false);
+          return;
         }
       }
 
       const postData = {
         title: data.title,
-        slug: data.slug || ID.unique(), // Use unique ID if slug is empty
+        slug: data.slug,
         content: data.content,
         status: data.status,
-        userId: userData?.$id,
         featuredImage: fileId,
       };
 
       console.log("Submitting Post Data:", postData);
 
-      let dbPost;
       if (post) {
-        dbPost = await appwriteService.updatePost(post.$id, postData);
+        // Update existing post
+        const updatedPost = await appwriteService.updatePost(
+          post.$id,
+          postData
+        );
+        if (updatedPost) {
+          console.log("Post updated successfully:", updatedPost);
+          navigate("/");
+        }
       } else {
-        dbPost = await appwriteService.createPost(postData);
-      }
-
-      if (dbPost) {
-        console.log("✅ Post Saved Successfully:", dbPost);
-        navigate(`/`);
-      } else {
-        console.error("❌ Failed to save post!");
+        // Create new post
+        const newPost = await appwriteService.createPost(postData);
+        if (newPost) {
+          console.log("Post created successfully:", newPost);
+          navigate("/");
+        }
       }
     } catch (error) {
-      console.error("❌ Submit Error:", error);
+      console.error("Submit Error:", error);
+      setError(error.message || "Failed to save post. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
+  if (!isAuthenticated && !loading) {
+    return (
+      <div className="p-4 text-center">
+        <div className="p-3 mb-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          You must be logged in to create posts.
+        </div>
+        <Button onClick={() => navigate("/login")}>Login</Button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(submit)} className="flex flex-wrap">
+      {error && (
+        <div className="w-full p-3 mb-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
       <div className="w-2/3 px-2">
         <Input
           label="Title :"
@@ -120,6 +189,9 @@ export default function PostForm({ post }) {
           control={control}
           defaultValue={getValues("content")}
         />
+        {errors.content && (
+          <p className="text-red-500">{errors.content.message}</p>
+        )}
       </div>
 
       <div className="w-1/3 px-2">
@@ -130,6 +202,8 @@ export default function PostForm({ post }) {
           accept="image/png, image/jpg, image/jpeg, image/gif"
           {...register("image", { required: !post })}
         />
+        {errors.image && <p className="text-red-500">{errors.image.message}</p>}
+
         {post && post.featuredImage && (
           <div className="w-full mb-4">
             <img
@@ -146,13 +220,15 @@ export default function PostForm({ post }) {
           className="mb-4"
           {...register("status", { required: true })}
         />
+        {errors.status && <p className="text-red-500">Status is required</p>}
 
         <Button
           type="submit"
           bgColor={post ? "bg-green-500" : undefined}
           className="w-full"
+          disabled={loading}
         >
-          {post ? "Update" : "Submit"}
+          {loading ? "Saving..." : post ? "Update" : "Submit"}
         </Button>
       </div>
     </form>
