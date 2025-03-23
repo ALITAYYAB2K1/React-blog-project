@@ -13,6 +13,7 @@ import Signup from "./pages/Signup";
 import Post from "./pages/Post";
 import AllPosts from "./pages/AllPosts";
 import AppwriteGuide from "./components/AppwriteGuide"; // Import the guide component
+import AppwriteDebug from "./components/AppwriteDebug";
 
 const router = createBrowserRouter([
   {
@@ -71,6 +72,10 @@ const router = createBrowserRouter([
       {
         path: "/appwrite-guide",
         element: <AppwriteGuide />,
+      },
+      {
+        path: "/appwrite-debug",
+        element: <AppwriteDebug />,
       },
     ],
   },

@@ -136,20 +136,25 @@ export class Service {
 
       console.log("Getting posts for user:", currentUser.$id);
 
+      // Query posts where the user field equals the current user's ID
       const response = await this.databases.listDocuments(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId,
         [Query.equal("user", currentUser.$id), Query.orderDesc("$createdAt")]
       );
 
-      console.log("Fetched User Posts:", response);
-      return response.documents || [];
+      console.log("Fetched User Posts Response:", response);
+      if (response && response.documents) {
+        return response.documents;
+      } else {
+        return [];
+      }
     } catch (error) {
       console.error("Appwrite Service :: getUserPosts :: error", error);
+      console.error("Error details:", JSON.stringify(error, null, 2));
       return [];
     }
   }
-
   async deletePost(slug) {
     try {
       // First check if the user owns this post
