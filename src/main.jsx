@@ -4,16 +4,16 @@ import "./index.css";
 import App from "./App.jsx";
 import { Provider } from "react-redux";
 import store from "./store/store.js";
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import { AuthLayout, Login } from "./components/index.js";
 import AddPost from "./pages/AddPost.jsx";
 import EditPost from "./pages/EditPost";
 import Signup from "./pages/Signup";
 import Post from "./pages/Post";
-
 import AllPosts from "./pages/AllPosts";
-import { RouterProvider } from "react-router-dom";
+import AppwriteGuide from "./components/AppwriteGuide"; // Import the guide component
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -43,7 +43,6 @@ const router = createBrowserRouter([
         path: "/all-posts",
         element: (
           <AuthLayout authentication>
-            {" "}
             <AllPosts />
           </AuthLayout>
         ),
@@ -52,7 +51,6 @@ const router = createBrowserRouter([
         path: "/add-post",
         element: (
           <AuthLayout authentication>
-            {" "}
             <AddPost />
           </AuthLayout>
         ),
@@ -61,7 +59,6 @@ const router = createBrowserRouter([
         path: "/edit-post/:slug",
         element: (
           <AuthLayout authentication>
-            {" "}
             <EditPost />
           </AuthLayout>
         ),
@@ -69,6 +66,11 @@ const router = createBrowserRouter([
       {
         path: "/post/:slug",
         element: <Post />,
+      },
+      // Add the AppwriteGuide route
+      {
+        path: "/appwrite-guide",
+        element: <AppwriteGuide />,
       },
     ],
   },

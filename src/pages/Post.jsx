@@ -14,7 +14,7 @@ export default function Post() {
 
   const userData = useSelector((state) => state.auth.userData);
 
-  // Check if the current user is the author (using 'user' field instead of 'userId')
+  // Check if the current user is the author
   const isAuthor = post && userData ? post.user === userData.$id : false;
 
   useEffect(() => {
@@ -25,7 +25,10 @@ export default function Post() {
         .then((post) => {
           if (post) {
             setPost(post);
-            console.log("Post data:", post); // For debugging
+            console.log("Post data:", post);
+            // Specifically log the user ID to debug ownership issues
+            console.log("Post user ID:", post.user);
+            console.log("Current user ID:", userData?.$id);
           } else {
             setError("Post not found");
             setTimeout(() => navigate("/"), 2000);
@@ -41,7 +44,7 @@ export default function Post() {
     } else {
       navigate("/");
     }
-  }, [slug, navigate]);
+  }, [slug, navigate, userData]);
 
   const deletePost = () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
@@ -66,7 +69,8 @@ export default function Post() {
     return (
       <Container>
         <div className="py-8 text-center">
-          <p>Loading post...</p>
+          <div className="w-10 h-10 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4">Loading post...</p>
         </div>
       </Container>
     );
@@ -76,7 +80,9 @@ export default function Post() {
     return (
       <Container>
         <div className="py-8 text-center">
-          <p className="text-red-500">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4 max-w-2xl mx-auto">
+            <p className="text-red-700">{error}</p>
+          </div>
         </div>
       </Container>
     );
@@ -115,6 +121,13 @@ export default function Post() {
                 </Button>
               </div>
             )}
+
+            {/* Debug info for user authentication and permissions */}
+            {userData && !isAuthor && (
+              <div className="absolute right-6 top-6 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded-md text-sm">
+                You are not the author of this post
+              </div>
+            )}
           </div>
 
           <div className="bg-white p-6 rounded-xl shadow-md">
@@ -122,8 +135,16 @@ export default function Post() {
               {post.title}
             </h1>
 
-            <div className="text-sm text-gray-500 mb-6">
-              Posted on {new Date(post.$createdAt).toLocaleDateString()}
+            <div className="text-sm text-gray-500 mb-6 flex justify-between items-center">
+              <span>
+                Posted on {new Date(post.$createdAt).toLocaleDateString()}
+              </span>
+
+              {post.user && (
+                <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs">
+                  Author ID: {post.user.substring(0, 8)}...
+                </span>
+              )}
             </div>
 
             <div className="prose prose-lg max-w-none">

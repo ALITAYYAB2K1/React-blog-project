@@ -36,7 +36,7 @@ export class Service {
           content: postData.content,
           featuredImage: postData.featuredImage,
           status: postData.status,
-          user: currentUser.$id, // Changed from userId to user to match collection schema
+          user: currentUser.$id, // Make sure this matches the field name in Appwrite
         }
       );
 
@@ -50,6 +50,23 @@ export class Service {
 
   async updatePost(slug, postData) {
     try {
+      // First check if the user owns this post
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error("User not authenticated!");
+      }
+
+      // Get the post to check ownership
+      const post = await this.getPost(slug);
+      if (!post) {
+        throw new Error("Post not found");
+      }
+
+      // Check if current user is the author
+      if (post.user !== currentUser.$id) {
+        throw new Error("You don't have permission to update this post");
+      }
+
       const response = await this.databases.updateDocument(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId,
@@ -59,7 +76,6 @@ export class Service {
           content: postData.content,
           featuredImage: postData.featuredImage,
           status: postData.status,
-          // Note: We typically don't update the user field on updates
         }
       );
       console.log("Post Updated Successfully:", response);
@@ -81,30 +97,78 @@ export class Service {
       return post;
     } catch (error) {
       console.error("Appwrite Service :: getPost :: error", error);
-      throw error;
+      return null;
     }
   }
 
   async getPosts() {
     try {
+      console.log(
+        "Getting all posts with database ID:",
+        conf.appwriteDatabaseId
+      );
+      console.log("Collection ID:", conf.appwriteCollectionId);
+
       const response = await this.databases.listDocuments(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId,
-        [
-          Query.equal("status", "active"), // Only fetch active posts
-          Query.orderDesc("$createdAt"), // Sort by creation date, newest first
-        ]
+        [Query.equal("status", "active"), Query.orderDesc("$createdAt")]
       );
-      console.log("Fetched Posts:", response);
-      return response;
+
+      console.log("Fetched All Posts Response:", response);
+      return response.documents || [];
     } catch (error) {
       console.error("Appwrite Service :: getPosts :: error", error);
-      throw error;
+      console.error("Error details:", JSON.stringify(error, null, 2));
+      return [];
+    }
+  }
+
+  // Method to get only the current user's posts
+  async getUserPosts() {
+    try {
+      const currentUser = await authService.getCurrentUser();
+
+      if (!currentUser) {
+        console.log("No user logged in");
+        return [];
+      }
+
+      console.log("Getting posts for user:", currentUser.$id);
+
+      const response = await this.databases.listDocuments(
+        conf.appwriteDatabaseId,
+        conf.appwriteCollectionId,
+        [Query.equal("user", currentUser.$id), Query.orderDesc("$createdAt")]
+      );
+
+      console.log("Fetched User Posts:", response);
+      return response.documents || [];
+    } catch (error) {
+      console.error("Appwrite Service :: getUserPosts :: error", error);
+      return [];
     }
   }
 
   async deletePost(slug) {
     try {
+      // First check if the user owns this post
+      const currentUser = await authService.getCurrentUser();
+      if (!currentUser) {
+        throw new Error("User not authenticated!");
+      }
+
+      // Get the post to check ownership
+      const post = await this.getPost(slug);
+      if (!post) {
+        throw new Error("Post not found");
+      }
+
+      // Check if current user is the author
+      if (post.user !== currentUser.$id) {
+        throw new Error("You don't have permission to delete this post");
+      }
+
       const status = await this.databases.deleteDocument(
         conf.appwriteDatabaseId,
         conf.appwriteCollectionId,
